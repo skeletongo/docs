@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DDD 知识图谱 — 从全景到局部</title>
+<style>
+  :root {
+    --blue: #2563EB; --blue-l: #DBEAFE; --blue-d: #1E40AF;
+    --green: #059669; --green-l: #D1FAE5; --green-d: #065F46;
+    --orange: #EA580C; --orange-l: #FED7AA; --orange-d: #9A3412;
+    --purple: #7C3AED; --purple-l: #EDE9FE; --purple-d: #5B21B6;
+    --red: #DC2626; --red-l: #FEE2E2;
+    --cyan: #0891B2; --cyan-l: #CFFAFE;
+    --amber: #D97706; --amber-l: #FEF3C7;
+    --slate: #475569; --slate-l: #F1F5F9;
+    --bg: #F8FAFC; --card: #FFFFFF; --text: #1E293B; --muted: #64748B;
+    --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,.92); backdrop-filter: blur(12px); border-bottom: 1px solid #E2E8F0; padding: 0 24px; display: flex; gap: 4px; overflow-x: auto; }
+  nav a { display: inline-block; padding: 14px 16px; font-size: 13px; font-weight: 500; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .2s; }
+  nav a:hover, nav a.active { color: var(--blue); border-color: var(--blue); }
+
+  header { background: linear-gradient(135deg, #1E293B 0%, #334155 100%); color: #FFF; padding: 64px 24px 56px; text-align: center; }
+  header h1 { font-size: 40px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 12px; }
+  header p { font-size: 17px; color: #94A3B8; max-width: 640px; margin: 0 auto; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+  section { margin-bottom: 56px; }
+  section h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  section h2 .num { background: var(--blue); color: #FFF; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  section > p { color: var(--muted); margin-bottom: 24px; font-size: 15px; max-width: 800px; }
+
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .card svg { display: block; width: 100%; height: auto; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .legend span { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .legend .dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: var(--slate-l); padding: 12px 16px; text-align: left; font-weight: 600; color: var(--slate); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  td { padding: 12px 16px; border-bottom: 1px solid #F1F5F9; vertical-align: top; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  td:nth-child(2) { color: var(--muted); font-size: 13px; }
+  tr:hover td { background: #FAFAFA; }
+
+  footer { text-align: center; padding: 32px 24px; color: var(--muted); font-size: 13px; border-top: 1px solid #E2E8F0; margin-top: 48px; }
+
+  @media (max-width: 768px) {
+    header h1 { font-size: 28px; }
+    section h2 { font-size: 22px; }
+    .legend { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#overview">全景图</a>
+  <a href="#strategic">战略设计</a>
+  <a href="#subdomain-bc">子域→BC</a>
+  <a href="#contextmap">上下文映射</a>
+  <a href="#tactical">战术设计</a>
+  <a href="#domain-service">领域服务</a>
+  <a href="#relationships">关系全景</a>
+  <a href="#layers">分层架构</a>
+  <a href="#cheatsheet">速查表</a>
+</nav>
+
+<header>
+  <h1>📐 DDD 知识图谱</h1>
+  <p>从宏观全景到微观细节，系统梳理 Domain-Driven Design 的核心概念、层次关系与协作模式</p>
+</header>
+
+<div class="container">
+
+<!-- ═══════════ 1. 全景图 ═══════════ -->
+<section id="overview">
+  <h2><span class="num">1</span> DDD 全景图</h2>
+  <p>DDD 分为<strong>战略设计</strong>（分析问题空间、划分限界上下文）和<strong>战术设计</strong>（编码实现领域模型）。两者通过通用语言贯通，从业务分析到代码落地形成闭环。</p>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--blue)"></span> 战略设计</span>
+    <span><span class="dot" style="background:var(--green)"></span> 战术设计</span>
+    <span><span class="dot" style="background:var(--purple)"></span> 贯通层</span>
+    <span><span class="dot" style="background:var(--orange)"></span> 问题/解决方案空间</span>
+  </div>
+
+  <div class="card">
+    <svg viewBox="0 0 1100 660" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="sh1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".1"/></filter>
+        <marker id="mBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#2563EB"/></marker>
+        <marker id="mGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#059669"/></marker>
+        <marker id="mPurple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#7C3AED"/></marker>
+        <marker id="mSlate" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748B"/></marker>
+        <linearGradient id="gPurple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8B5CF6"/><stop stop-color="#7C3AED"/></linearGradient>
+      </defs>
+
+      <!-- Problem Space -->
+      <rect x="325" y="18" width="450" height="90" rx="14" fill="#FED7AA" stroke="#EA580C" stroke-width="1.5"/>
+      <text x="550" y="48" text-anchor="middle" font-size="16" font-weight="700" fill="#9A3412">🌍 问题空间 Problem Space</text>
+      <text x="550" y="72" text-anchor="middle" font-size="12" fill="#9A3412">领域 Domain → 核心域 · 支撑域 · 通用域</text>
+      <text x="550" y="92" text-anchor="middle" font-size="10.5" fill="#B45309">(业务分析师 + 领域专家 协作)</text>
+
+      <!-- Arrow down -->
+      <line x1="550" y1="110" x2="550" y2="140" stroke="#64748B" stroke-width="2" marker-end="url(#mSlate)" stroke-dasharray="6,3"/>
+      <text x="575" y="132" font-size="10" fill="#64748B">分析 → 建模</text>
+
+      <!-- DDD Core border -->
+      <rect x="40" y="152" width="1020" height="370" rx="16" fill="none" stroke="#E2E8F0" stroke-width="1.5" stroke-dasharray="8,4"/>
+      <text x="550" y="176" text-anchor="middle" font-size="14" font-weight="700" fill="#64748B">DDD 核心</text>
+
+      <!-- ===== Strategic Column ===== -->
+      <rect x="60" y="196" width="440" height="310" rx="12" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1" filter="url(#sh1)"/>
+      <rect x="60" y="196" width="440" height="38" rx="12" fill="#2563EB"/>
+      <rect x="60" y="222" width="440" height="12" fill="#2563EB"/>
+      <text x="280" y="221" text-anchor="middle" font-size="15" font-weight="700" fill="#FFF">🧭 战略设计 Strategic Design</text>
+
+      <!-- Row 1: BC + UL -->
+      <rect x="82" y="250" width="192" height="56" rx="8" fill="#FFF" stroke="#3B82F6" stroke-width="1.5" filter="url(#sh1)"/>
+      <text x="178" y="274" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">限界上下文</text>
+      <text x="178" y="294" text-anchor="middle" font-size="10.5" fill="#3B82F6">Bounded Context</text>
+
+      <rect x="286" y="250" width="192" height="56" rx="8" fill="#FFF" stroke="#3B82F6" stroke-width="1.5" filter="url(#sh1)"/>
+      <text x="382" y="274" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">通用语言</text>
+      <text x="382" y="294" text-anchor="middle" font-size="10.5" fill="#3B82F6">Ubiquitous Language</text>
+
+      <!-- Row 2: Context Map + Subdomain -->
+      <rect x="82" y="322" width="192" height="56" rx="8" fill="#FFF" stroke="#3B82F6" stroke-width="1.5" filter="url(#sh1)"/>
+      <text x="178" y="346" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">上下文映射</text>
+      <text x="178" y="366" text-anchor="middle" font-size="10.5" fill="#3B82F6">Context Map</text>
+
+      <rect x="286" y="322" width="192" height="56" rx="8" fill="#FFF" stroke="#3B82F6" stroke-width="1.5" filter="url(#sh1)"/>
+      <text x="382" y="346" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">子域划分</text>
+      <text x="382" y="366" text-anchor="middle" font-size="10.5" fill="#3B82F6">Subdomain</text>
+
+      <!-- Output -->
+      <rect x="82" y="396" width="396" height="50" rx="8" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="280" y="418" text-anchor="middle" font-size="11" fill="#3B82F6">产出: 限界上下文边界 · 团队划分 · 集成策略</text>
+      <text x="280" y="436" text-anchor="middle" font-size="9.5" fill="#93C5FD">Output: Context boundaries · Team topology · Integration patterns</text>
+
+      <!-- Horizontal arrows within strategic -->
+      <line x1="276" y1="278" x2="284" y2="278" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#mBlue)"/>
+      <line x1="276" y1="350" x2="284" y2="350" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#mBlue)"/>
+
+      <!-- ===== Tactical Column ===== -->
+      <rect x="600" y="196" width="440" height="310" rx="12" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1" filter="url(#sh1)"/>
+      <rect x="600" y="196" width="440" height="38" rx="12" fill="#059669"/>
+      <rect x="600" y="222" width="440" height="12" fill="#059669"/>
+      <text x="820" y="221" text-anchor="middle" font-size="15" font-weight="700" fill="#FFF">⚙️ 战术设计 Tactical Design</text>
+
+      <!-- Aggregate container -->
+      <rect x="620" y="250" width="400" height="200" rx="8" fill="#FFF" stroke="#6EE7B7" stroke-width="1.5"/>
+      <text x="820" y="274" text-anchor="middle" font-size="14" font-weight="700" fill="#065F46">聚合 Aggregate</text>
+
+      <!-- Inner row 1 -->
+      <rect x="638" y="290" width="172" height="44" rx="6" fill="#ECFDF5" stroke="#10B981" stroke-width="1"/>
+      <text x="724" y="316" text-anchor="middle" font-size="12" font-weight="600" fill="#065F46">聚合根 Aggregate Root</text>
+
+      <rect x="830" y="290" width="172" height="44" rx="6" fill="#ECFDF5" stroke="#10B981" stroke-width="1"/>
+      <text x="916" y="316" text-anchor="middle" font-size="12" font-weight="600" fill="#065F46">实体 Entity</text>
+
+      <!-- Inner row 2 -->
+      <rect x="638" y="346" width="172" height="44" rx="6" fill="#ECFDF5" stroke="#10B981" stroke-width="1"/>
+      <text x="724" y="372" text-anchor="middle" font-size="12" font-weight="600" fill="#065F46">值对象 Value Object</text>
+
+      <rect x="830" y="346" width="172" height="44" rx="6" fill="#ECFDF5" stroke="#10B981" stroke-width="1"/>
+      <text x="916" y="372" text-anchor="middle" font-size="12" font-weight="600" fill="#065F46">领域事件 Domain Event</text>
+
+      <!-- Inner row 3: Repository + Service + Factory -->
+      <rect x="638" y="402" width="120" height="34" rx="6" fill="#D1FAE5" stroke="#34D399" stroke-width="1"/>
+      <text x="698" y="424" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">仓储 Repository</text>
+
+      <rect x="770" y="402" width="120" height="34" rx="6" fill="#D1FAE5" stroke="#34D399" stroke-width="1"/>
+      <text x="830" y="424" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">领域服务</text>
+
+      <rect x="902" y="402" width="100" height="34" rx="6" fill="#D1FAE5" stroke="#34D399" stroke-width="1"/>
+      <text x="952" y="424" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">工厂 Factory</text>
+
+      <!-- Output row -->
+      <rect x="620" y="460" width="400" height="28" rx="6" fill="none" stroke="#34D399" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="820" y="480" text-anchor="middle" font-size="10.5" fill="#059669">产出: 可工作的领域模型代码</text>
+
+      <!-- ===== Cross-column connections ===== -->
+      <!-- Purple bridge -->
+      <rect x="500" y="258" width="100" height="40" rx="10" fill="url(#gPurple)" filter="url(#sh1)"/>
+      <text x="550" y="283" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">通用语言</text>
+
+      <line x1="502" y1="344" x2="598" y2="344" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#mPurple)"/>
+      <text x="550" y="337" text-anchor="middle" font-size="9" fill="#7C3AED">驱动</text>
+
+      <line x1="502" y1="396" x2="598" y2="420" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#mPurple)"/>
+      <text x="550" y="414" text-anchor="middle" font-size="9" fill="#7C3AED">实现</text>
+
+      <!-- Arrow down to solution -->
+      <line x1="550" y1="508" x2="550" y2="548" stroke="#64748B" stroke-width="2" marker-end="url(#mSlate)" stroke-dasharray="6,3"/>
+      <text x="575" y="535" font-size="10.5" fill="#64748B">落地 → 编码</text>
+
+      <!-- Solution Space -->
+      <rect x="300" y="558" width="500" height="60" rx="14" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1.5"/>
+      <text x="550" y="584" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">💻 解决方案空间 Solution Space</text>
+      <text x="550" y="604" text-anchor="middle" font-size="11" fill="#64748B">应用层 · 领域层 · 基础设施层 · 接口层</text>
+    </svg>
+  </div>
+</section>
+
+
+<!-- ═══════════ 2. 战略设计 ═══════════ -->
+<section id="strategic">
+  <h2><span class="num">2</span> 战略设计详解</h2>
+  <p>战略设计的核心是<strong>理解业务</strong>：将领域分解为子域，为每个子域建立限界上下文，并明确上下文之间的集成关系。</p>
+
+  <div class="card">
+    <svg viewBox="0 0 1100 660" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="sd1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".1"/></filter>
+        <marker id="sdArrB" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#2563EB"/></marker>
+        <marker id="sdArrS" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748B"/></marker>
+      </defs>
+
+      <!-- Domain -->
+      <rect x="370" y="16" width="360" height="42" rx="10" fill="#2563EB" filter="url(#sd1)"/>
+      <text x="550" y="43" text-anchor="middle" font-size="15" font-weight="700" fill="#FFF">🌍 领域 Domain (公司业务范围)</text>
+
+      <!-- Arrows to subdomains -->
+      <line x1="430" y1="60" x2="280" y2="92" stroke="#2563EB" stroke-width="1.5" marker-end="url(#sdArrB)"/>
+      <line x1="550" y1="60" x2="550" y2="92" stroke="#2563EB" stroke-width="1.5" marker-end="url(#sdArrB)"/>
+      <line x1="670" y1="60" x2="820" y2="92" stroke="#2563EB" stroke-width="1.5" marker-end="url(#sdArrB)"/>
+
+      <!-- Core Subdomain -->
+      <rect x="170" y="96" width="220" height="80" rx="8" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5" filter="url(#sd1)"/>
+      <rect x="170" y="96" width="220" height="28" rx="8" fill="#3B82F6"/>
+      <rect x="170" y="116" width="220" height="8" fill="#3B82F6"/>
+      <text x="280" y="116" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">⭐ 核心域 Core</text>
+      <text x="280" y="142" text-anchor="middle" font-size="11" fill="#1E40AF">核心竞争力，最高投入</text>
+      <text x="280" y="162" text-anchor="middle" font-size="10" fill="#60A5FA">自研 · 持续打磨差异化</text>
+
+      <!-- Supporting -->
+      <rect x="440" y="96" width="220" height="80" rx="8" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5" filter="url(#sd1)"/>
+      <rect x="440" y="96" width="220" height="28" rx="8" fill="#D97706"/>
+      <rect x="440" y="116" width="220" height="8" fill="#D97706"/>
+      <text x="550" y="116" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">🔧 支撑域 Supporting</text>
+      <text x="550" y="142" text-anchor="middle" font-size="11" fill="#92400E">支撑核心域运作</text>
+      <text x="550" y="162" text-anchor="middle" font-size="10" fill="#B45309">定制开发或采购</text>
+
+      <!-- Generic -->
+      <rect x="710" y="96" width="220" height="80" rx="8" fill="#D1FAE5" stroke="#059669" stroke-width="1.5" filter="url(#sd1)"/>
+      <rect x="710" y="96" width="220" height="28" rx="8" fill="#059669"/>
+      <rect x="710" y="116" width="220" height="8" fill="#059669"/>
+      <text x="820" y="116" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">📦 通用域 Generic</text>
+      <text x="820" y="142" text-anchor="middle" font-size="11" fill="#065F46">通用能力，非差异化</text>
+      <text x="820" y="162" text-anchor="middle" font-size="10" fill="#34D399">尽量采购 / 复用</text>
+
+      <!-- Arrow down -->
+      <line x1="550" y1="178" x2="550" y2="200" stroke="#64748B" stroke-width="1.5" marker-end="url(#sdArrS)"/>
+      <text x="580" y="194" font-size="10" fill="#64748B">映射到</text>
+
+      <!-- Bounded Contexts -->
+      <rect x="40" y="210" width="1020" height="190" rx="14" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="70" y="238" font-size="14" font-weight="700" fill="#475569">📦 限界上下文 Bounded Contexts</text>
+      <text x="300" y="238" font-size="10.5" fill="#94A3B8">(每个子域可对应 1~N 个限界上下文)</text>
+
+      <!-- BC 1-4 -->
+      <rect x="90" y="258" width="215" height="80" rx="8" fill="#FFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#sd1)"/>
+      <rect x="90" y="258" width="215" height="28" rx="8" fill="#F1F5F9"/>
+      <rect x="90" y="278" width="215" height="8" fill="#F1F5F9"/>
+      <text x="197" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">订单上下文</text>
+      <text x="197" y="302" text-anchor="middle" font-size="10" fill="#64748B">Order Context</text>
+      <text x="197" y="322" text-anchor="middle" font-size="9.5" fill="#94A3B8">订单 · 订单项 · 状态</text>
+
+      <rect x="325" y="258" width="215" height="80" rx="8" fill="#FFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#sd1)"/>
+      <rect x="325" y="258" width="215" height="28" rx="8" fill="#F1F5F9"/>
+      <rect x="325" y="278" width="215" height="8" fill="#F1F5F9"/>
+      <text x="432" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">商品上下文</text>
+      <text x="432" y="302" text-anchor="middle" font-size="10" fill="#64748B">Product Context</text>
+      <text x="432" y="322" text-anchor="middle" font-size="9.5" fill="#94A3B8">商品 · SKU · 库存</text>
+
+      <rect x="560" y="258" width="215" height="80" rx="8" fill="#FFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#sd1)"/>
+      <rect x="560" y="258" width="215" height="28" rx="8" fill="#F1F5F9"/>
+      <rect x="560" y="278" width="215" height="8" fill="#F1F5F9"/>
+      <text x="667" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">支付上下文</text>
+      <text x="667" y="302" text-anchor="middle" font-size="10" fill="#64748B">Payment Context</text>
+      <text x="667" y="322" text-anchor="middle" font-size="9.5" fill="#94A3B8">支付 · 退款 · 流水</text>
+
+      <rect x="795" y="258" width="215" height="80" rx="8" fill="#FFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#sd1)"/>
+      <rect x="795" y="258" width="215" height="28" rx="8" fill="#F1F5F9"/>
+      <rect x="795" y="278" width="215" height="8" fill="#F1F5F9"/>
+      <text x="902" y="278" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">用户上下文</text>
+      <text x="902" y="302" text-anchor="middle" font-size="10" fill="#64748B">User Context</text>
+      <text x="902" y="322" text-anchor="middle" font-size="9.5" fill="#94A3B8">用户 · 权限 · 认证</text>
+
+      <!-- UL labels -->
+      <text x="197" y="354" text-anchor="middle" font-size="10" fill="#7C3AED">「 通用语言 」</text>
+      <text x="432" y="354" text-anchor="middle" font-size="10" fill="#7C3AED">「 通用语言 」</text>
+      <text x="667" y="354" text-anchor="middle" font-size="10" fill="#7C3AED">「 通用语言 」</text>
+      <text x="902" y="354" text-anchor="middle" font-size="10" fill="#7C3AED">「 通用语言 」</text>
+
+      <!-- Key insight -->
+      <rect x="40" y="420" width="1020" height="56" rx="8" fill="#EDE9FE" stroke="#C4B5FD" stroke-width="1"/>
+      <text x="65" y="446" font-size="12" font-weight="700" fill="#5B21B6">💡 关键洞察</text>
+      <text x="175" y="446" font-size="11" fill="#7C3AED">每个限界上下文拥有【独立的通用语言】，同一术语在不同上下文中含义不同</text>
+      <text x="175" y="466" font-size="10" fill="#A78BFA">如 "用户" 在订单上下文是 "买家"，在支付上下文是 "付款人"</text>
+
+      <!-- Context Map -->
+      <rect x="40" y="494" width="1020" height="140" rx="14" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="70" y="520" font-size="14" font-weight="700" fill="#475569">🗺️ 上下文映射 Context Map</text>
+
+      <!-- Pattern chips row 1 -->
+      <rect x="122" y="538" width="155" height="32" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1"/>
+      <text x="199" y="559" text-anchor="middle" font-size="11" font-weight="600" fill="#1E40AF">合作关系 Partnership</text>
+
+      <rect x="297" y="538" width="155" height="32" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1"/>
+      <text x="374" y="559" text-anchor="middle" font-size="11" font-weight="600" fill="#1E40AF">共享内核 Shared Kernel</text>
+
+      <rect x="472" y="538" width="155" height="32" rx="6" fill="#FEF3C7" stroke="#D97706" stroke-width="1"/>
+      <text x="550" y="559" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">客户-供应商 C/S</text>
+
+      <rect x="647" y="538" width="155" height="32" rx="6" fill="#FEF3C7" stroke="#D97706" stroke-width="1"/>
+      <text x="725" y="559" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">遵奉者 Conformist</text>
+
+      <rect x="822" y="538" width="155" height="32" rx="6" fill="#FEE2E2" stroke="#DC2626" stroke-width="1"/>
+      <text x="900" y="559" text-anchor="middle" font-size="11" font-weight="600" fill="#991B1B">防腐层 ACL</text>
+
+      <!-- Pattern chips row 2 -->
+      <rect x="117" y="584" width="155" height="32" rx="6" fill="#D1FAE5" stroke="#059669" stroke-width="1"/>
+      <text x="194" y="605" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">开放主机 OHS</text>
+
+      <rect x="292" y="584" width="155" height="32" rx="6" fill="#D1FAE5" stroke="#059669" stroke-width="1"/>
+      <text x="369" y="605" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">发布语言 PL</text>
+
+      <rect x="467" y="584" width="155" height="32" rx="6" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1"/>
+      <text x="544" y="605" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">各行其道 Separate Ways</text>
+
+      <rect x="642" y="584" width="340" height="32" rx="6" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1"/>
+      <text x="812" y="605" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">大泥球 Big Ball of Mud (反模式)</text>
+    </svg>
+  </div>
+</section>
+
+
+<!-- ═══════════ 子域 → 限界上下文 ═══════════ -->
+<section id="subdomain-bc">
+  <h2><span class="num">↦</span> 子域 → 限界上下文 映射关系</h2>
+  <p>子域是<strong>业务分析</strong>的产物（问题空间），限界上下文是<strong>技术设计</strong>的产物（解决方案空间）。一个子域可以映射到 1~N 个限界上下文。</p>
+
+  <div class="card">
+    <svg viewBox="0 0 1100 720" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="sb1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".1"/></filter>
+        <marker id="sbArr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748B"/></marker>
+        <marker id="sbBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#2563EB"/></marker>
+        <marker id="sbAmb" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#D97706"/></marker>
+        <marker id="sbGrn" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#059669"/></marker>
+      </defs>
+
+      <!-- ═══ Column headers ═══ -->
+      <!-- Left header -->
+      <rect x="40" y="18" width="460" height="38" rx="8" fill="#2563EB"/>
+      <text x="270" y="43" text-anchor="middle" font-size="14" font-weight="700" fill="#FFF">🧭 问题空间 — 业务分析</text>
+
+      <!-- Right header -->
+      <rect x="600" y="18" width="460" height="38" rx="8" fill="#059669"/>
+      <text x="830" y="43" text-anchor="middle" font-size="14" font-weight="700" fill="#FFF">⚙️ 解决方案空间 — 技术设计</text>
+
+      <!-- ═══ LEFT COLUMN: Problem Space ═══ -->
+
+      <!-- Domain -->
+      <rect x="170" y="74" width="200" height="38" rx="8" fill="#2563EB" filter="url(#sb1)"/>
+      <text x="270" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#FFF">🌍 领域 Domain</text>
+
+      <!-- Divider line down -->
+      <line x1="270" y1="114" x2="270" y2="132" stroke="#2563EB" stroke-width="2"/>
+
+      <!-- Subdomains label -->
+      <text x="270" y="150" text-anchor="middle" font-size="12" font-weight="700" fill="#64748B">子域划分 Subdomains</text>
+
+      <!-- ── Core ── -->
+      <rect x="40" y="166" width="460" height="142" rx="10" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1"/>
+      <rect x="40" y="166" width="460" height="30" rx="10" fill="#3B82F6"/>
+      <rect x="40" y="186" width="460" height="10" fill="#3B82F6"/>
+      <text x="270" y="187" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">⭐ 核心域 Core — 核心竞争力</text>
+      <text x="270" y="216" text-anchor="middle" font-size="10.5" fill="#1E40AF">例: 推荐引擎 / 风控模型 / AI诊断</text>
+      <text x="270" y="236" text-anchor="middle" font-size="10.5" fill="#1E40AF">自研 · 最高投入 · 持续打磨差异化</text>
+      <text x="270" y="258" text-anchor="middle" font-size="10.5" fill="#1E40AF">
+        <tspan font-weight="700">投入最高的人力和资源</tspan>
+      </text>
+      <text x="270" y="280" text-anchor="middle" font-size="10" fill="#60A5FA">"做好这个，客户选我不选别人"</text>
+
+      <!-- ── Supporting ── -->
+      <rect x="40" y="324" width="460" height="142" rx="10" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+      <rect x="40" y="324" width="460" height="30" rx="10" fill="#D97706"/>
+      <rect x="40" y="344" width="460" height="10" fill="#D97706"/>
+      <text x="270" y="345" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">🔧 支撑域 Supporting — 支撑核心运作</text>
+      <text x="270" y="374" text-anchor="middle" font-size="10.5" fill="#92400E">例: 订单管理 / 账户管理 / 预约挂号</text>
+      <text x="270" y="394" text-anchor="middle" font-size="10.5" fill="#92400E">必须有 · 但别人也能做 · 定制开发为主</text>
+      <text x="270" y="416" text-anchor="middle" font-size="10.5" fill="#92400E">
+        <tspan font-weight="700">投入适中的人力和资源</tspan>
+      </text>
+      <text x="270" y="438" text-anchor="middle" font-size="10" fill="#B45309">"支撑核心域顺利运转"</text>
+
+      <!-- ── Generic ── -->
+      <rect x="40" y="482" width="460" height="142" rx="10" fill="#D1FAE5" stroke="#34D399" stroke-width="1"/>
+      <rect x="40" y="482" width="460" height="30" rx="10" fill="#059669"/>
+      <rect x="40" y="502" width="460" height="10" fill="#059669"/>
+      <text x="270" y="503" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">📦 通用域 Generic — 通用能力</text>
+      <text x="270" y="532" text-anchor="middle" font-size="10.5" fill="#065F46">例: 用户认证 / 支付网关 / 短信通知</text>
+      <text x="270" y="552" text-anchor="middle" font-size="10.5" fill="#065F46">市面上有成熟方案 · 尽量采购/复用</text>
+      <text x="270" y="574" text-anchor="middle" font-size="10.5" fill="#065F46">
+        <tspan font-weight="700">能买就买，能省就省</tspan>
+      </text>
+      <text x="270" y="596" text-anchor="middle" font-size="10" fill="#34D399">"接第三方就行，不用自己造轮子"</text>
+
+      <!-- ═══ RIGHT COLUMN: Solution Space ═══ -->
+
+      <!-- BCs header -->
+      <text x="830" y="88" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">限界上下文 Bounded Contexts</text>
+      <text x="830" y="108" text-anchor="middle" font-size="9" fill="#94A3B8">(每个子域可映射 1~N 个 BC · 一个团队一个部署单元)</text>
+
+      <!-- Core → BCs: 推荐上下文 -->
+      <rect x="600" y="130" width="460" height="56" rx="8" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5" filter="url(#sb1)"/>
+      <text x="830" y="158" text-anchor="middle" font-size="12" font-weight="700" fill="#1E40AF">推荐上下文 Recommendation Context</text>
+      <text x="830" y="178" text-anchor="middle" font-size="9.5" fill="#3B82F6">推荐算法 · 用户画像 · A/B实验 · 效果评估</text>
+
+      <!-- Supporting → BCs: 3 BCs -->
+      <rect x="600" y="206" width="460" height="154" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1" stroke-dasharray="5,3"/>
+      <text x="830" y="226" text-anchor="middle" font-size="11" font-weight="700" fill="#92400E">支撑域 映射到 3 个限界上下文</text>
+
+      <rect x="620" y="240" width="200" height="50" rx="6" fill="#FFF" stroke="#D97706" stroke-width="1" filter="url(#sb1)"/>
+      <text x="720" y="264" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">订单上下文</text>
+      <text x="720" y="282" text-anchor="middle" font-size="9" fill="#B45309">下单·改单·查单</text>
+
+      <rect x="840" y="240" width="200" height="50" rx="6" fill="#FFF" stroke="#D97706" stroke-width="1" filter="url(#sb1)"/>
+      <text x="940" y="264" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">支付上下文</text>
+      <text x="940" y="282" text-anchor="middle" font-size="9" fill="#B45309">支付·退款·对账</text>
+
+      <rect x="620" y="300" width="420" height="50" rx="6" fill="#FFF" stroke="#D97706" stroke-width="1" filter="url(#sb1)"/>
+      <text x="830" y="324" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">物流上下文</text>
+      <text x="830" y="342" text-anchor="middle" font-size="9" fill="#B45309">发货·签收·退货 (与外部WMS集成, 独立团队维护)</text>
+
+      <!-- Generic → BCs: 用户上下文 -->
+      <rect x="600" y="382" width="460" height="56" rx="8" fill="#D1FAE5" stroke="#34D399" stroke-width="1.5" filter="url(#sb1)"/>
+      <text x="830" y="410" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">用户上下文 User Context</text>
+      <text x="830" y="430" text-anchor="middle" font-size="9.5" fill="#059669">登录认证 · 权限管理 · 个人信息 (可采购 Keycloak/Auth0)</text>
+
+      <!-- ═══ MAPPING ARROWS ═══ -->
+
+      <!-- Core → 推荐上下文 -->
+      <line x1="502" y1="220" x2="598" y2="158" stroke="#2563EB" stroke-width="2" marker-end="url(#sbBlue)"/>
+      <text x="555" y="195" text-anchor="middle" font-size="9" fill="#2563EB">1:1 映射</text>
+
+      <!-- Supporting → 3 BCs (3 arrows) -->
+      <line x1="502" y1="370" x2="598" y2="260" stroke="#D97706" stroke-width="2" marker-end="url(#sbAmb)"/>
+      <text x="555" y="310" text-anchor="middle" font-size="10" fill="#D97706">1:N 映射</text>
+
+      <line x1="502" y1="385" x2="598" y2="320" stroke="#D97706" stroke-width="1.5" marker-end="url(#sbAmb)"/>
+
+      <!-- Generic → 用户上下文 -->
+      <line x1="502" y1="540" x2="598" y2="410" stroke="#059669" stroke-width="2" marker-end="url(#sbGrn)"/>
+      <text x="555" y="480" text-anchor="middle" font-size="9" fill="#059669">1:1 映射</text>
+
+      <!-- ═══ BOTTOM INSIGHT ═══ -->
+      <rect x="40" y="644" width="1020" height="56" rx="10" fill="#EDE9FE" stroke="#C4B5FD" stroke-width="1"/>
+      <text x="65" y="668" font-size="12" font-weight="700" fill="#5B21B6">💡 为什么 1:N？技术约束驱动拆分：</text>
+      <text x="65" y="690" font-size="10.5" fill="#7C3AED">支付有 PCI 合规要求需独立部署 · 物流需对接外部 WMS 异步处理 · 三个团队分别负责(康威定律) · 这些都不是业务分析能决定的, 是技术决策</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════ 上下文映射模式 ═══════════ -->
+<section id="contextmap">
+  <h2><span class="num">↦</span> 上下文映射模式</h2>
+  <p>上下文映射定义了限界上下文之间的<strong>9种集成关系</strong>（含1个反模式）。选择何种模式取决于团队协作方式、组织结构和系统边界。</p>
+
+  <div class="card">
+    <svg viewBox="0 0 1100 920" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="cm1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".1"/></filter>
+        <marker id="cmA" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748B"/></marker>
+        <marker id="cmAB" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#2563EB"/></marker>
+        <marker id="cmAY" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#D97706"/></marker>
+        <marker id="cmAR" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#DC2626"/></marker>
+        <marker id="cmAG" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#059669"/></marker>
+      </defs>
+
+      <!-- ===== ROW 1 ===== -->
+      <!-- Pattern 1: Partnership -->
+      <rect x="40" y="20" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="60" y="48" font-size="13" font-weight="700" fill="#2563EB">1. 合作关系 Partnership</text>
+      <text x="60" y="68" font-size="10" fill="#64748B">两个团队对等合作，上下游互相适应，共同制定接口规范</text>
+
+      <rect x="70" y="88" width="170" height="48" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
+      <text x="155" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#1E40AF">上下文 A (团队 A)</text>
+
+      <rect x="350" y="88" width="170" height="48" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
+      <text x="435" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#1E40AF">上下文 B (团队 B)</text>
+
+      <line x1="242" y1="112" x2="348" y2="112" stroke="#2563EB" stroke-width="2"/>
+      <text x="295" y="104" text-anchor="middle" font-size="9" fill="#2563EB">← 双向协作 →</text>
+
+      <!-- Pattern 2: Shared Kernel -->
+      <rect x="560" y="20" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="580" y="48" font-size="13" font-weight="700" fill="#2563EB">2. 共享内核 Shared Kernel</text>
+      <text x="580" y="68" font-size="10" fill="#64748B">共享部分模型与代码，需谨慎维护避免耦合，变更要协调</text>
+
+      <rect x="590" y="88" width="155" height="48" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
+      <text x="667" y="116" text-anchor="middle" font-size="12" font-weight="600" fill="#1E40AF">上下文 A</text>
+
+      <rect x="770" y="84" width="65" height="56" rx="6" fill="#FEF3C7" stroke="#D97706" stroke-width="2"/>
+      <text x="802" y="112" text-anchor="middle" font-size="10" font-weight="700" fill="#92400E">共享</text>
+      <text x="802" y="128" text-anchor="middle" font-size="9" fill="#B45309">内核</text>
+
+      <rect x="860" y="88" width="170" height="48" rx="6" fill="#DBEAFE" stroke="#3B82F6" stroke-width="1.5"/>
+      <text x="945" y="116" text-anchor="middle" font-size="12" font-weight="600" fill="#1E40AF">上下文 B</text>
+
+      <line x1="747" y1="112" x2="768" y2="112" stroke="#D97706" stroke-width="1.5"/>
+      <line x1="837" y1="112" x2="858" y2="112" stroke="#D97706" stroke-width="1.5"/>
+
+      <!-- ===== ROW 2 ===== -->
+      <!-- Pattern 3: Customer-Supplier -->
+      <rect x="40" y="184" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="60" y="212" font-size="13" font-weight="700" fill="#D97706">3. 客户-供应商 Customer-Supplier</text>
+      <text x="60" y="232" font-size="10" fill="#64748B">下游(客户)依赖上游(供应商)，上游有义务满足下游合理需求</text>
+
+      <rect x="70" y="252" width="170" height="48" rx="6" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5"/>
+      <text x="155" y="276" text-anchor="middle" font-size="12" font-weight="600" fill="#92400E">上游 / 供应商 U</text>
+      <text x="155" y="294" text-anchor="middle" font-size="9" fill="#B45309">制定接口 · 规划发布</text>
+
+      <rect x="350" y="252" width="170" height="48" rx="6" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5"/>
+      <text x="435" y="276" text-anchor="middle" font-size="12" font-weight="600" fill="#92400E">下游 / 客户 D</text>
+      <text x="435" y="294" text-anchor="middle" font-size="9" fill="#B45309">协商需求 · 适应变化</text>
+
+      <line x1="242" y1="276" x2="348" y2="276" stroke="#D97706" stroke-width="2" marker-end="url(#cmAY)"/>
+      <text x="295" y="268" text-anchor="middle" font-size="9" fill="#D97706">U 提供 → D</text>
+
+      <!-- Pattern 4: Conformist -->
+      <rect x="560" y="184" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="580" y="212" font-size="13" font-weight="700" fill="#D97706">4. 遵奉者 Conformist</text>
+      <text x="580" y="232" font-size="10" fill="#64748B">上游无意愿/无动力协作，下游只能盲目跟随上游模型</text>
+
+      <rect x="590" y="252" width="170" height="48" rx="6" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5"/>
+      <text x="675" y="276" text-anchor="middle" font-size="12" font-weight="600" fill="#991B1B">上游 (强势)</text>
+      <text x="675" y="294" text-anchor="middle" font-size="9" fill="#DC2626">不愿协作</text>
+
+      <rect x="870" y="252" width="170" height="48" rx="6" fill="#FEF3C7" stroke="#D97706" stroke-width="1.5"/>
+      <text x="955" y="276" text-anchor="middle" font-size="12" font-weight="600" fill="#92400E">下游 (追随)</text>
+      <text x="955" y="294" text-anchor="middle" font-size="9" fill="#B45309">全盘接受上游模型</text>
+
+      <line x1="762" y1="276" x2="868" y2="276" stroke="#EF4444" stroke-width="2" marker-end="url(#cmAR)"/>
+      <text x="815" y="268" text-anchor="middle" font-size="9" fill="#EF4444">U → D (被动跟随)</text>
+
+      <!-- ===== ROW 3 ===== -->
+      <!-- Pattern 5: ACL -->
+      <rect x="40" y="348" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="60" y="376" font-size="13" font-weight="700" fill="#DC2626">5. 防腐层 ACL (Anticorruption Layer)</text>
+      <text x="60" y="396" font-size="10" fill="#64748B">下游建立翻译层，将上游模型转换为自己领域模型，防止污染</text>
+
+      <rect x="65" y="416" width="130" height="48" rx="6" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5"/>
+      <text x="130" y="442" text-anchor="middle" font-size="11" font-weight="600" fill="#991B1B">上游 (外部/遗留)</text>
+
+      <rect x="222" y="414" width="90" height="52" rx="6" fill="#FEF2F2" stroke="#DC2626" stroke-width="2"/>
+      <text x="267" y="438" text-anchor="middle" font-size="10" font-weight="700" fill="#DC2626">ACL</text>
+      <text x="267" y="456" text-anchor="middle" font-size="8" fill="#DC2626">翻译层</text>
+
+      <rect x="340" y="416" width="180" height="48" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+      <text x="430" y="442" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">下游 (受保护)</text>
+
+      <line x1="197" y1="440" x2="220" y2="440" stroke="#DC2626" stroke-width="2" marker-end="url(#cmAR)"/>
+      <line x1="314" y1="440" x2="338" y2="440" stroke="#059669" stroke-width="2" marker-end="url(#cmAG)"/>
+
+      <!-- Pattern 6: OHS -->
+      <rect x="560" y="348" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="580" y="376" font-size="13" font-weight="700" fill="#059669">6. 开放主机服务 OHS (Open Host Service)</text>
+      <text x="580" y="396" font-size="10" fill="#64748B">上游定义标准协议/API，多个下游自由集成，解耦实现细节</text>
+
+      <rect x="590" y="416" width="160" height="48" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+      <text x="670" y="440" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">上游 (OHS)</text>
+      <text x="670" y="458" text-anchor="middle" font-size="9" fill="#34D399">REST · gRPC · API</text>
+
+      <rect x="830" y="416" width="210" height="48" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+      <text x="935" y="440" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">下游 B, C, D...</text>
+      <text x="935" y="458" text-anchor="middle" font-size="9" fill="#34D399">集成便捷 · 扩展自由</text>
+
+      <line x1="752" y1="440" x2="828" y2="440" stroke="#059669" stroke-width="2" marker-end="url(#cmAG)"/>
+      <text x="790" y="432" text-anchor="middle" font-size="9" fill="#059669">提供 API</text>
+
+      <!-- ===== ROW 4 ===== -->
+      <!-- Pattern 7: PL -->
+      <rect x="40" y="512" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="60" y="540" font-size="13" font-weight="700" fill="#059669">7. 发布语言 PL (Published Language)</text>
+      <text x="60" y="560" font-size="10" fill="#64748B">使用标准化的文档 / 模型进行集成 (XML Schema, JSON Schema 等)</text>
+
+      <rect x="65" y="578" width="145" height="50" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+      <text x="137" y="606" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">上游</text>
+
+      <rect x="238" y="575" width="95" height="56" rx="6" fill="#CFFAFE" stroke="#0891B2" stroke-width="2"/>
+      <text x="285" y="601" text-anchor="middle" font-size="10" font-weight="700" fill="#0891B2">PL 文档</text>
+      <text x="285" y="619" text-anchor="middle" font-size="8" fill="#06B6D4">schema / IDL</text>
+
+      <rect x="360" y="578" width="155" height="50" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+      <text x="437" y="606" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">下游</text>
+
+      <line x1="212" y1="603" x2="236" y2="603" stroke="#059669" stroke-width="1.5"/>
+      <line x1="335" y1="603" x2="358" y2="603" stroke="#059669" stroke-width="1.5"/>
+
+      <!-- Pattern 8: Separate Ways -->
+      <rect x="560" y="512" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="580" y="540" font-size="13" font-weight="700" fill="#64748B">8. 各行其道 Separate Ways</text>
+      <text x="580" y="560" font-size="10" fill="#64748B">无集成关系，各自独立发展 — 适合完全独立的功能模块</text>
+
+      <rect x="590" y="582" width="170" height="48" rx="6" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5"/>
+      <text x="675" y="608" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">上下文 A</text>
+      <text x="675" y="624" text-anchor="middle" font-size="9" fill="#94A3B8">独立演化</text>
+
+      <rect x="870" y="582" width="170" height="48" rx="6" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5"/>
+      <text x="955" y="608" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">上下文 B</text>
+      <text x="955" y="624" text-anchor="middle" font-size="9" fill="#94A3B8">独立演化</text>
+
+      <line x1="762" y1="606" x2="868" y2="606" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="6,3"/>
+      <text x="815" y="598" text-anchor="middle" font-size="10" fill="#94A3B8">╳ 无集成</text>
+
+      <!-- ===== ROW 5 ===== -->
+      <!-- Pattern 9: BBOM -->
+      <rect x="40" y="676" width="500" height="148" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="60" y="704" font-size="13" font-weight="700" fill="#DC2626">9. 大泥球 Big Ball of Mud ⚠️ 反模式</text>
+      <text x="60" y="724" font-size="10" fill="#64748B">无边界、无结构的混乱系统 · 必须用 ACL 隔离</text>
+
+      <rect x="65" y="742" width="180" height="52" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="155" y="768" text-anchor="middle" font-size="12" font-weight="600" fill="#DC2626">💩 Big Ball of Mud</text>
+      <text x="155" y="786" text-anchor="middle" font-size="9" fill="#64748B">混乱 · 无边界</text>
+
+      <rect x="285" y="744" width="70" height="48" rx="6" fill="#FEE2E2" stroke="#DC2626" stroke-width="2"/>
+      <text x="320" y="767" text-anchor="middle" font-size="10" font-weight="700" fill="#DC2626">ACL</text>
+      <text x="320" y="783" text-anchor="middle" font-size="8" fill="#DC2626">隔离</text>
+
+      <rect x="395" y="742" width="120" height="52" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+      <text x="455" y="766" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">整洁上下文</text>
+      <text x="455" y="784" text-anchor="middle" font-size="9" fill="#34D399">受保护</text>
+
+      <line x1="247" y1="768" x2="283" y2="768" stroke="#DC2626" stroke-width="2" marker-end="url(#cmAR)"/>
+      <line x1="357" y1="768" x2="393" y2="768" stroke="#059669" stroke-width="2" marker-end="url(#cmAG)"/>
+
+      <!-- Summary -->
+      <rect x="560" y="676" width="500" height="148" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1" filter="url(#cm1)"/>
+      <text x="580" y="704" font-size="13" font-weight="700" fill="#334155">📋 模式选择指南</text>
+      <text x="580" y="726" font-size="10.5" fill="#475569">同一团队 → Partnership / Shared Kernel</text>
+      <text x="580" y="746" font-size="10.5" fill="#475569">可协作的上下游 → Customer-Supplier / OHS + PL</text>
+      <text x="580" y="766" font-size="10.5" fill="#475569">不可协作的上游 → Conformist / ACL</text>
+      <text x="580" y="786" font-size="10.5" fill="#475569">完全独立 → Separate Ways</text>
+      <text x="580" y="806" font-size="10.5" fill="#DC2626">遇到大泥球 → 必须用 ACL 隔离</text>
+
+      <!-- Footer note -->
+      <text x="810" y="865" text-anchor="middle" font-size="10" fill="#94A3B8">OHS + PL 常组合使用 · ACL 也常配合 OHS 实现 · 模式非互斥，可按需组合</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════ 3. 战术设计 ═══════════ -->
+<section id="tactical">
+  <h2><span class="num">3</span> 战术设计详解</h2>
+  <p>战术设计关注<strong>如何编码实现</strong>领域模型。聚合是最核心的构件，它封装了实体和值对象，对外只暴露聚合根。</p>
+
+  <div class="card">
+    <svg viewBox="0 0 1100 660" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="td1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".1"/></filter>
+        <marker id="tdArrG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#059669"/></marker>
+        <marker id="tdArrS" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#64748B"/></marker>
+      </defs>
+
+      <!-- Title -->
+      <text x="550" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#475569">构建块层次与协作关系</text>
+
+      <!-- Application Layer -->
+      <rect x="50" y="46" width="1000" height="50" rx="10" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="550" y="72" text-anchor="middle" font-size="13" font-weight="700" fill="#64748B">应用层 Application: 用例编排 · DTO · 事务边界</text>
+      <text x="550" y="90" text-anchor="middle" font-size="10" fill="#94A3B8">接收请求 → 调用领域层 → 返回结果</text>
+
+      <line x1="550" y1="98" x2="550" y2="118" stroke="#64748B" stroke-width="1.5" marker-end="url(#tdArrS)"/>
+
+      <!-- ─── Aggregate (core, left) ─── -->
+      <rect x="50" y="126" width="520" height="208" rx="12" fill="#D1FAE5" stroke="#059669" stroke-width="2.5" filter="url(#td1)"/>
+      <rect x="50" y="126" width="520" height="34" rx="12" fill="#059669"/>
+      <rect x="50" y="148" width="520" height="12" fill="#059669"/>
+      <text x="310" y="149" text-anchor="middle" font-size="14" font-weight="700" fill="#FFF">📦 聚合 Aggregate — 核心战术单元</text>
+
+      <!-- Aggregate Root -->
+      <rect x="75" y="175" width="225" height="58" rx="6" fill="#FFF" stroke="#10B981" stroke-width="1.5"/>
+      <text x="187" y="200" text-anchor="middle" font-size="13" font-weight="700" fill="#065F46">🎯 聚合根 Root</text>
+      <text x="187" y="218" text-anchor="middle" font-size="9.5" fill="#059669">全局唯一标识 · 入口 · 守卫一致性</text>
+
+      <!-- Entity -->
+      <rect x="320" y="175" width="225" height="58" rx="6" fill="#FFF" stroke="#10B981" stroke-width="1.5"/>
+      <text x="432" y="200" text-anchor="middle" font-size="13" font-weight="700" fill="#065F46">🏷️ 实体 Entity</text>
+      <text x="432" y="218" text-anchor="middle" font-size="9.5" fill="#059669">唯一标识 · 可变 · 有生命周期</text>
+
+      <!-- Value Object -->
+      <rect x="75" y="248" width="470" height="58" rx="6" fill="#FFF" stroke="#10B981" stroke-width="1.5"/>
+      <text x="310" y="273" text-anchor="middle" font-size="13" font-weight="700" fill="#065F46">📏 值对象 Value Object</text>
+      <text x="310" y="293" text-anchor="middle" font-size="9.5" fill="#059669">无标识 · 不可变(推荐) · 按值相等 · 可替换 · 自验证</text>
+
+      <!-- Arrows inside aggregate -->
+      <line x1="302" y1="204" x2="318" y2="204" stroke="#10B981" stroke-width="1.5" marker-end="url(#tdArrG)"/>
+      <text x="317" y="197" text-anchor="middle" font-size="9" fill="#34D399">引用</text>
+      <line x1="187" y1="235" x2="187" y2="246" stroke="#10B981" stroke-width="1.5" marker-end="url(#tdArrG)"/>
+      <line x1="432" y1="235" x2="310" y2="246" stroke="#10B981" stroke-width="1.5" marker-end="url(#tdArrG)"/>
+
+      <!-- ─── Supporting blocks (right) ─── -->
+      <text x="830" y="144" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">领域层支撑构件</text>
+
+      <!-- Row 1: Repository + Factory -->
+      <rect x="610" y="162" width="220" height="62" rx="8" fill="#FFF" stroke="#34D399" stroke-width="1.5" filter="url(#td1)"/>
+      <text x="720" y="188" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">📚 仓储 Repository</text>
+      <text x="720" y="208" text-anchor="middle" font-size="10" fill="#64748B">聚合持久化 (整存整取)</text>
+
+      <rect x="850" y="162" width="200" height="62" rx="8" fill="#FFF" stroke="#34D399" stroke-width="1.5" filter="url(#td1)"/>
+      <text x="950" y="188" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">🏭 工厂 Factory</text>
+      <text x="950" y="208" text-anchor="middle" font-size="10" fill="#64748B">创建复杂聚合/实体</text>
+
+      <!-- Row 2: Domain Service + Event -->
+      <rect x="610" y="240" width="220" height="62" rx="8" fill="#FFF" stroke="#34D399" stroke-width="1.5" filter="url(#td1)"/>
+      <text x="720" y="266" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">⚡ 领域服务 Service</text>
+      <text x="720" y="286" text-anchor="middle" font-size="10" fill="#64748B">无状态 · 跨聚合逻辑</text>
+
+      <rect x="850" y="240" width="200" height="62" rx="8" fill="#FFF" stroke="#34D399" stroke-width="1.5" filter="url(#td1)"/>
+      <text x="950" y="266" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">📢 领域事件 Event</text>
+      <text x="950" y="286" text-anchor="middle" font-size="10" fill="#64748B">过去式命名 · 解耦聚合</text>
+
+      <!-- Module (spans full right width) -->
+      <rect x="610" y="316" width="440" height="36" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="830" y="339" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">📂 模块 Module — 组织相关概念，低耦合高内聚</text>
+
+      <!-- Interaction arrows -->
+      <line x1="572" y1="193" x2="608" y2="193" stroke="#059669" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#tdArrG)"/>
+      <line x1="572" y1="271" x2="608" y2="271" stroke="#059669" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#tdArrG)"/>
+
+      <!-- ─── Design principles ─── -->
+      <rect x="50" y="358" width="1000" height="56" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+      <text x="75" y="382" font-size="12" font-weight="700" fill="#92400E">💡 聚合设计原则</text>
+      <text x="250" y="382" font-size="10.5" fill="#92400E">① 在一致性边界内保护业务不变性</text>
+      <text x="520" y="382" font-size="10.5" fill="#92400E">② 设计小聚合</text>
+      <text x="675" y="382" font-size="10.5" fill="#92400E">③ 通过 ID 引用其他聚合</text>
+      <text x="880" y="382" font-size="10.5" fill="#92400E">④ 最终一致性跨聚合更新</text>
+
+      <!-- ─── Infrastructure ─── -->
+      <rect x="50" y="432" width="1000" height="46" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="550" y="456" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">基础设施层 Infrastructure (下层)</text>
+      <text x="550" y="472" text-anchor="middle" font-size="10" fill="#94A3B8">持久化实现 · 消息中间件 · 外部服务调用 · 依赖注入</text>
+
+      <!-- ─── Dependency direction ─── -->
+      <rect x="50" y="494" width="1000" height="32" rx="6" fill="#E2E8F0"/>
+      <text x="550" y="516" text-anchor="middle" font-size="11" fill="#64748B">依赖方向: 接口层 → 应用层 → 领域层 ← 基础设施层</text>
+
+      <!-- ─── Layer diagram (mini) ─── -->
+      <rect x="50" y="542" width="1000" height="95" rx="8" fill="#FFF" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="75" y="564" font-size="12" font-weight="700" fill="#64748B">📋 应用层如何与领域层协作</text>
+
+      <rect x="75" y="577" width="180" height="32" rx="5" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="165" y="598" text-anchor="middle" font-size="10" fill="#64748B">Application Service</text>
+
+      <line x1="257" y1="593" x2="278" y2="593" stroke="#94A3B8" stroke-width="1" marker-end="url(#tdArrS)"/>
+
+      <rect x="282" y="577" width="180" height="32" rx="5" fill="#D1FAE5" stroke="#10B981" stroke-width="1"/>
+      <text x="372" y="598" text-anchor="middle" font-size="10" fill="#065F46">Repository 接口</text>
+
+      <line x1="464" y1="593" x2="485" y2="593" stroke="#94A3B8" stroke-width="1" marker-end="url(#tdArrS)"/>
+
+      <rect x="489" y="577" width="180" height="32" rx="5" fill="#D1FAE5" stroke="#10B981" stroke-width="1"/>
+      <text x="579" y="598" text-anchor="middle" font-size="10" fill="#065F46">Aggregate Root</text>
+
+      <line x1="671" y1="593" x2="692" y2="593" stroke="#94A3B8" stroke-width="1" marker-end="url(#tdArrS)"/>
+
+      <rect x="696" y="577" width="170" height="32" rx="5" fill="#ECFDF5" stroke="#34D399" stroke-width="1"/>
+      <text x="781" y="598" text-anchor="middle" font-size="10" fill="#065F46">持久化 (Infrastructure)</text>
+
+      <text x="550" y="627" text-anchor="middle" font-size="10" fill="#94A3B8">应用层编排 → 通过仓储接口获取聚合根 → 调用业务方法 → 事务提交</text>
+    </svg>
+  </div>
+
+  <h3 style="margin:28px 0 12px;font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--purple);color:#FFF;font-size:14px;flex-shrink:0">↦</span> 仓储使用权限 — 各层谁能用、怎么用</h3>
+
+  <div class="card" style="margin-top:12px">
+    <svg viewBox="0 0 1100 670" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="rp1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".1"/></filter>
+        <marker id="rpA" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94A3B8"/></marker>
+      </defs>
+
+      <text x="550" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">🏗️ 仓储使用权限 — 各层谁能用、怎么用</text>
+
+      <!-- Interface Layer -->
+      <rect x="100" y="48" width="900" height="58" rx="8" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5" filter="url(#rp1)"/>
+      <text x="550" y="74" text-anchor="middle" font-size="13" font-weight="700" fill="#94A3B8">接口层 Controller · ❌ 禁止使用仓储</text>
+      <text x="550" y="96" text-anchor="middle" font-size="10" fill="#CBD5E1">不关心数据从哪来，只负责接收请求和返回响应</text>
+
+      <line x1="550" y1="108" x2="550" y2="122" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#rpA)"/>
+
+      <!-- App Service -->
+      <rect x="50" y="128" width="1000" height="58" rx="8" fill="#DBEAFE" stroke="#3B82F6" stroke-width="2" filter="url(#rp1)"/>
+      <text x="550" y="154" text-anchor="middle" font-size="13" font-weight="700" fill="#1E40AF">应用服务 Application Service · ✅ get / save 都可以</text>
+      <text x="550" y="176" text-anchor="middle" font-size="10" fill="#3B82F6">主力使用者：findById → 传给聚合改 → save 存回去 · 管理事务边界</text>
+
+      <line x1="550" y1="188" x2="550" y2="202" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#rpA)"/>
+
+      <!-- Left: Aggregate -->
+      <rect x="50" y="210" width="400" height="58" rx="8" fill="#FEE2E2" stroke="#EF4444" stroke-width="1.5" filter="url(#rp1)"/>
+      <text x="250" y="236" text-anchor="middle" font-size="13" font-weight="700" fill="#991B1B">聚合 Aggregate · ❌ 禁止注入仓储</text>
+      <text x="250" y="258" text-anchor="middle" font-size="10" fill="#DC2626">聚合不应该自己去查别的聚合 · 需要什么让应用服务传进来</text>
+
+      <!-- Right: Domain Service -->
+      <rect x="500" y="210" width="550" height="58" rx="8" fill="#D1FAE5" stroke="#34D399" stroke-width="1.5" filter="url(#rp1)"/>
+      <text x="775" y="236" text-anchor="middle" font-size="13" font-weight="700" fill="#065F46">领域服务 Domain Service · ✅ 只读查询 · ❌ 不可 save()</text>
+      <text x="775" y="258" text-anchor="middle" font-size="10" fill="#059669">findById 查询多个聚合做计算 · 但不负责持久化 · 持久化归应用服务</text>
+
+      <line x1="250" y1="270" x2="250" y2="284" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#rpA)"/>
+      <line x1="775" y1="270" x2="775" y2="284" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#rpA)"/>
+
+      <!-- Infrastructure -->
+      <rect x="150" y="290" width="800" height="50" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" filter="url(#rp1)"/>
+      <text x="550" y="316" text-anchor="middle" font-size="13" font-weight="700" fill="#475569">基础设施层 Infrastructure · 🔧 实现者，不是使用者</text>
+      <text x="550" y="334" text-anchor="middle" font-size="10" fill="#94A3B8">只实现 findById / save 接口 · 自己不注入另一个仓储</text>
+
+      <!-- Summary Table -->
+      <text x="550" y="380" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">📋 权限速查</text>
+
+      <rect x="80" y="396" width="940" height="208" rx="8" fill="#FFF" stroke="#E2E8F0" stroke-width="1"/>
+
+      <rect x="80" y="396" width="940" height="36" rx="8" fill="#F1F5F9"/>
+      <rect x="80" y="422" width="940" height="10" fill="#F1F5F9"/>
+      <text x="200" y="420" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">层</text>
+      <text x="435" y="420" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">可注入仓储？</text>
+      <text x="670" y="420" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">findById()？</text>
+      <text x="905" y="420" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">save()？</text>
+
+      <text x="200" y="458" text-anchor="middle" font-size="11" fill="#64748B">接口层</text>
+      <text x="435" y="458" text-anchor="middle" font-size="12" fill="#DC2626" font-weight="700">❌</text>
+      <text x="670" y="458" text-anchor="middle" font-size="12" fill="#DC2626" font-weight="700">❌</text>
+      <text x="905" y="458" text-anchor="middle" font-size="12" fill="#DC2626" font-weight="700">❌</text>
+      <line x1="100" y1="470" x2="1000" y2="470" stroke="#F1F5F9" stroke-width="1"/>
+
+      <text x="200" y="494" text-anchor="middle" font-size="11" fill="#2563EB" font-weight="600">应用服务</text>
+      <text x="435" y="494" text-anchor="middle" font-size="12" fill="#059669" font-weight="700">✅</text>
+      <text x="670" y="494" text-anchor="middle" font-size="12" fill="#059669" font-weight="700">✅</text>
+      <text x="905" y="494" text-anchor="middle" font-size="12" fill="#059669" font-weight="700">✅</text>
+      <line x1="100" y1="506" x2="1000" y2="506" stroke="#F1F5F9" stroke-width="1"/>
+
+      <text x="200" y="530" text-anchor="middle" font-size="11" fill="#7C3AED" font-weight="600">领域服务</text>
+      <text x="435" y="530" text-anchor="middle" font-size="12" fill="#059669" font-weight="700">✅</text>
+      <text x="670" y="530" text-anchor="middle" font-size="12" fill="#059669" font-weight="700">✅</text>
+      <text x="905" y="530" text-anchor="middle" font-size="12" fill="#DC2626" font-weight="700">❌</text>
+      <line x1="100" y1="542" x2="1000" y2="542" stroke="#F1F5F9" stroke-width="1"/>
+
+      <text x="200" y="566" text-anchor="middle" font-size="11" fill="#DC2626" font-weight="600">聚合内部</text>
+      <text x="435" y="566" text-anchor="middle" font-size="12" fill="#DC2626" font-weight="700">❌</text>
+      <text x="670" y="566" text-anchor="middle" font-size="12" fill="#DC2626" font-weight="700">❌</text>
+      <text x="905" y="566" text-anchor="middle" font-size="12" fill="#DC2626" font-weight="700">❌</text>
+      <line x1="100" y1="578" x2="1000" y2="578" stroke="#F1F5F9" stroke-width="1"/>
+
+      <text x="200" y="598" text-anchor="middle" font-size="11" fill="#64748B">基础设施</text>
+      <text x="435" y="598" text-anchor="middle" font-size="11" fill="#94A3B8">🔧 实现接口</text>
+      <text x="670" y="598" text-anchor="middle" font-size="11" fill="#94A3B8">🔧 实现接口</text>
+      <text x="905" y="598" text-anchor="middle" font-size="11" fill="#94A3B8">🔧 实现接口</text>
+
+      <rect x="180" y="625" width="740" height="32" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+      <text x="550" y="646" text-anchor="middle" font-size="10.5" fill="#92400E">🔑 聚合如果需要别的东西 → 让应用服务通过仓储查好，再作为参数传进去。聚合只管自己的事。</text>
+    </svg>
+  </div>
+</section>
+
+
+<!-- ═══════════ 领域服务设计指南 ═══════════ -->
+<section id="domain-service">
+  <h2><span class="num">↦</span> 领域服务：何时用、怎么用</h2>
+  <p>领域服务不是「放多个聚合的地方」，而是<strong>放无法归属到任何实体/VO的领域逻辑</strong>的地方。</p>
+
+  <div class="card">
+    <svg viewBox="0 0 1100 660" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="ds1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".1"/></filter>
+        <marker id="dsA" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#64748B"/></marker>
+      </defs>
+
+      <!-- ═══ Decision Tree ═══ -->
+      <text x="550" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">🔀 决策树：这段逻辑放在哪？</text>
+
+      <!-- Question box -->
+      <rect x="250" y="46" width="600" height="48" rx="10" fill="#EDE9FE" stroke="#A78BFA" stroke-width="2" filter="url(#ds1)"/>
+      <text x="550" y="75" text-anchor="middle" font-size="14" font-weight="700" fill="#5B21B6">❓ 这个操作是否天然属于某个 实体 或 值对象？</text>
+
+      <!-- YES branch -->
+      <line x1="360" y1="96" x2="240" y2="152" stroke="#059669" stroke-width="2.5" marker-end="url(#dsA)"/>
+      <text x="280" y="122" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">YES</text>
+
+      <rect x="80" y="156" width="320" height="52" rx="8" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5" filter="url(#ds1)"/>
+      <text x="240" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="#065F46">✅ 放在 Entity / ValueObject 里</text>
+      <text x="240" y="200" text-anchor="middle" font-size="10.5" fill="#059669">例: Order.submit() · Money.add()</text>
+
+      <!-- NO branch -->
+      <line x1="740" y1="96" x2="860" y2="152" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#dsA)"/>
+      <text x="820" y="122" text-anchor="middle" font-size="12" font-weight="700" fill="#7C3AED">NO</text>
+
+      <rect x="700" y="156" width="320" height="52" rx="8" fill="#EDE9FE" stroke="#A78BFA" stroke-width="1.5" filter="url(#ds1)"/>
+      <text x="860" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="#5B21B6">🔷 放在 Domain Service 里</text>
+      <text x="860" y="200" text-anchor="middle" font-size="10.5" fill="#7C3AED">它不属于任何人，就是一道业务规则</text>
+
+      <!-- ═══ Three Scenarios ═══ -->
+      <text x="550" y="252" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">领域服务的三种典型场景</text>
+
+      <!-- Scenario 1 -->
+      <rect x="40" y="272" width="330" height="100" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#ds1)"/>
+      <rect x="40" y="272" width="330" height="30" rx="10" fill="#3B82F6"/>
+      <rect x="40" y="292" width="330" height="10" fill="#3B82F6"/>
+      <text x="205" y="293" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">📊 跨聚合查询/计算</text>
+      <text x="205" y="322" text-anchor="middle" font-size="10.5" fill="#475569">需要读多个聚合的数据</text>
+      <text x="205" y="342" text-anchor="middle" font-size="10.5" fill="#475569">做计算, 但不修改任何聚合</text>
+      <text x="205" y="362" text-anchor="middle" font-size="10" fill="#94A3B8">例: 信用评分 · 风险评级</text>
+
+      <!-- Scenario 2 -->
+      <rect x="385" y="272" width="330" height="100" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#ds1)"/>
+      <rect x="385" y="272" width="330" height="30" rx="10" fill="#D97706"/>
+      <rect x="385" y="292" width="330" height="10" fill="#D97706"/>
+      <text x="550" y="293" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">⚖️ 无状态业务规则</text>
+      <text x="550" y="322" text-anchor="middle" font-size="10.5" fill="#475569">规则不属于任何实体/VO</text>
+      <text x="550" y="342" text-anchor="middle" font-size="10.5" fill="#475569">有输入 → 判断 → 输出结果</text>
+      <text x="550" y="362" text-anchor="middle" font-size="10" fill="#94A3B8">例: 反洗钱检查 · 定价策略</text>
+
+      <!-- Scenario 3 -->
+      <rect x="730" y="272" width="330" height="100" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#ds1)"/>
+      <rect x="730" y="272" width="330" height="30" rx="10" fill="#DC2626"/>
+      <rect x="730" y="292" width="330" height="10" fill="#DC2626"/>
+      <text x="895" y="293" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">⚠️ 跨聚合协调写</text>
+      <text x="895" y="322" text-anchor="middle" font-size="10.5" fill="#475569">改一个聚合 + 发事件</text>
+      <text x="895" y="342" text-anchor="middle" font-size="10.5" fill="#475569">另一个聚合异步响应</text>
+      <text x="895" y="362" text-anchor="middle" font-size="10" fill="#94A3B8">例: 下单锁定优惠券</text>
+
+      <!-- ═══ Comparison Table ═══ -->
+      <text x="550" y="414" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">领域服务 vs 应用服务</text>
+
+      <!-- Table header -->
+      <rect x="40" y="428" width="1020" height="36" rx="6" fill="#F1F5F9"/>
+      <text x="72" y="452" font-size="12" font-weight="700" fill="#475569">对比维度</text>
+      <text x="380" y="452" text-anchor="middle" font-size="12" font-weight="700" fill="#7C3AED">领域服务 Domain Service</text>
+      <text x="720" y="452" text-anchor="middle" font-size="12" font-weight="700" fill="#2563EB">应用服务 Application Service</text>
+
+      <!-- Rows -->
+      <rect x="40" y="464" width="1020" height="32" rx="0" fill="#FFF" stroke="#F1F5F9" stroke-width="1"/>
+      <text x="72" y="485" font-size="11" fill="#475569">包含业务规则？</text>
+      <text x="380" y="485" text-anchor="middle" font-size="11" fill="#059669">✅ 有，这是领域逻辑</text>
+      <text x="720" y="485" text-anchor="middle" font-size="11" fill="#DC2626">❌ 没有，只做编排</text>
+
+      <rect x="40" y="496" width="1020" height="32" rx="0" fill="#FAFAFA" stroke="#F1F5F9" stroke-width="1"/>
+      <text x="72" y="517" font-size="11" fill="#475569">管理事务？</text>
+      <text x="380" y="517" text-anchor="middle" font-size="11" fill="#DC2626">❌ 不管事务</text>
+      <text x="720" y="517" text-anchor="middle" font-size="11" fill="#059669">✅ 开事务、提交</text>
+
+      <rect x="40" y="528" width="1020" height="32" rx="0" fill="#FFF" stroke="#F1F5F9" stroke-width="1"/>
+      <text x="72" y="549" font-size="11" fill="#475569">可以 save()？</text>
+      <text x="380" y="549" text-anchor="middle" font-size="11" fill="#DC2626">❌ 只读不写</text>
+      <text x="720" y="549" text-anchor="middle" font-size="11" fill="#059669">✅ 调用 repo.save()</text>
+
+      <rect x="40" y="560" width="1020" height="32" rx="0" fill="#FAFAFA" stroke="#F1F5F9" stroke-width="1"/>
+      <text x="72" y="581" font-size="11" fill="#475569">谁调用它？</text>
+      <text x="380" y="581" text-anchor="middle" font-size="11" fill="#7C3AED">应用服务、其他领域对象</text>
+      <text x="720" y="581" text-anchor="middle" font-size="11" fill="#2563EB">接口层 (Controller)</text>
+
+      <!-- Key insight -->
+      <rect x="130" y="608" width="840" height="34" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+      <text x="550" y="630" text-anchor="middle" font-size="11" fill="#92400E">🔑 铁律：一次事务只改一个聚合。跨聚合操作在应用服务里协调，通过领域事件异步传播</text>
+    </svg>
+  </div>
+</section>
+
+
+<!-- ═══════════ 4. 概念关系全景图 ═══════════ -->
+<section id="relationships">
+  <h2><span class="num">4</span> 概念关系全景图</h2>
+  <p>一图展示 DDD 所有核心概念之间的<strong>依赖、包含、驱动和实现</strong>关系。箭头方向揭示了信息的流向和决策依赖。</p>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--blue)"></span> 包含 / 组成</span>
+    <span><span class="dot" style="background:var(--green)"></span> 调用 / 使用</span>
+    <span><span class="dot" style="background:var(--purple)"></span> 驱动 / 实现</span>
+    <span><span class="dot" style="background:var(--orange)"></span> 依赖 / 编排</span>
+  </div>
+
+  <div class="card">
+    <svg viewBox="0 0 1100 860" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="cn1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".08"/></filter>
+        <marker id="aInc" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#2563EB"/></marker>
+        <marker id="aCal" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#059669"/></marker>
+        <marker id="aDri" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#7C3AED"/></marker>
+        <marker id="aDep" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#EA580C"/></marker>
+      </defs>
+
+      <!-- ═══ STRATEGIC LAYER ═══ -->
+      <rect x="30" y="20" width="1040" height="235" rx="12" fill="#DBEAFE" stroke="#93C5FD" stroke-width="1" opacity=".6"/>
+      <text x="55" y="48" font-size="14" font-weight="700" fill="#1E40AF">战略层 Strategic</text>
+
+      <!-- Row 1: 4 blocks centered -->
+      <!-- Domain (x=112, w=190, center=207) -->
+      <rect x="112" y="60" width="190" height="56" rx="8" fill="#2563EB" filter="url(#cn1)"/>
+      <text x="207" y="86" text-anchor="middle" font-size="13" font-weight="700" fill="#FFF">领域 Domain</text>
+      <text x="207" y="106" text-anchor="middle" font-size="9" fill="#93C5FD">问题空间</text>
+
+      <!-- Subdomain (x=327, w=190, center=422) -->
+      <rect x="327" y="60" width="190" height="56" rx="8" fill="#3B82F6" filter="url(#cn1)"/>
+      <text x="422" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">子域 Subdomain</text>
+      <text x="422" y="106" text-anchor="middle" font-size="9" fill="#93C5FD">核心 · 支撑 · 通用</text>
+
+      <!-- BC (x=542, w=210, center=647) -->
+      <rect x="542" y="60" width="210" height="56" rx="8" fill="#3B82F6" filter="url(#cn1)"/>
+      <text x="647" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">限界上下文 BC</text>
+      <text x="647" y="106" text-anchor="middle" font-size="9" fill="#93C5FD">解决方案空间边界</text>
+
+      <!-- UL (x=777, w=210, center=882) -->
+      <rect x="777" y="60" width="210" height="56" rx="8" fill="#6366F1" filter="url(#cn1)"/>
+      <text x="882" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">通用语言 UL</text>
+      <text x="882" y="106" text-anchor="middle" font-size="9" fill="#C7D2FE">领域专家 + 开发者共享</text>
+
+      <!-- Row 2: Context Map (under BC) -->
+      <rect x="542" y="148" width="210" height="48" rx="8" fill="#60A5FA" filter="url(#cn1)"/>
+      <text x="647" y="174" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">上下文映射</text>
+      <text x="647" y="190" text-anchor="middle" font-size="9" fill="#DBEAFE">集成模式与团队关系</text>
+
+      <!-- Strategic arrows (horizontal) -->
+      <line x1="304" y1="88" x2="325" y2="88" stroke="#2563EB" stroke-width="2" marker-end="url(#aInc)"/>
+      <text x="315" y="80" text-anchor="middle" font-size="9" fill="#2563EB">分解</text>
+
+      <line x1="519" y1="88" x2="540" y2="88" stroke="#2563EB" stroke-width="2" marker-end="url(#aInc)"/>
+      <text x="530" y="80" text-anchor="middle" font-size="9" fill="#2563EB">映射</text>
+
+      <line x1="754" y1="88" x2="775" y2="88" stroke="#2563EB" stroke-width="1.5" marker-end="url(#aInc)"/>
+      <text x="765" y="80" text-anchor="middle" font-size="9" fill="#2563EB">定义</text>
+
+      <!-- BC → Context Map (vertical) -->
+      <line x1="647" y1="118" x2="647" y2="146" stroke="#2563EB" stroke-width="1.5" marker-end="url(#aInc)"/>
+      <text x="662" y="136" font-size="9" fill="#2563EB">记录</text>
+
+      <!-- ═══ CROSS-LAYER ARROWS ═══ -->
+      <!-- Domain→Aggregate -->
+      <line x1="207" y1="118" x2="227" y2="303" stroke="#7C3AED" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#aDri)"/>
+      <text x="175" y="220" text-anchor="middle" font-size="10" fill="#7C3AED" transform="rotate(-90,175,220)">分析驱动</text>
+
+      <!-- Subdomain→Root -->
+      <line x1="422" y1="118" x2="457" y2="303" stroke="#7C3AED" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#aDri)"/>
+      <text x="390" y="220" text-anchor="middle" font-size="10" fill="#7C3AED" transform="rotate(-90,390,220)">边界定义</text>
+
+      <!-- UL→VO -->
+      <line x1="882" y1="118" x2="887" y2="303" stroke="#7C3AED" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#aDri)"/>
+      <text x="862" y="220" text-anchor="middle" font-size="10" fill="#7C3AED" transform="rotate(-90,862,220)">术语来源</text>
+
+      <!-- ═══ TACTICAL LAYER ═══ -->
+      <rect x="30" y="280" width="1040" height="295" rx="12" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1" opacity=".6"/>
+      <text x="55" y="308" font-size="14" font-weight="700" fill="#065F46">战术层 Tactical</text>
+
+      <!-- Row 1: Core blocks (centered: x=117,362,577,792) -->
+      <rect x="117" y="328" width="220" height="62" rx="10" fill="#059669" filter="url(#cn1)"/>
+      <text x="227" y="356" text-anchor="middle" font-size="14" font-weight="700" fill="#FFF">聚合 Aggregate</text>
+      <text x="227" y="378" text-anchor="middle" font-size="10" fill="#A7F3D0">一致性边界 · 事务单元</text>
+
+      <rect x="362" y="328" width="190" height="62" rx="8" fill="#10B981" filter="url(#cn1)"/>
+      <text x="457" y="356" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">聚合根 Root</text>
+      <text x="457" y="378" text-anchor="middle" font-size="10" fill="#D1FAE5">入口 · 全局标识</text>
+
+      <rect x="577" y="328" width="190" height="62" rx="8" fill="#34D399" filter="url(#cn1)"/>
+      <text x="672" y="356" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">实体 Entity</text>
+      <text x="672" y="378" text-anchor="middle" font-size="10" fill="#ECFDF5">标识 + 可变 · 生命周期</text>
+
+      <rect x="792" y="328" width="190" height="62" rx="8" fill="#6EE7B7" filter="url(#cn1)"/>
+      <text x="887" y="356" text-anchor="middle" font-size="12" font-weight="700" fill="#FFF">值对象 VO</text>
+      <text x="887" y="378" text-anchor="middle" font-size="10" fill="#ECFDF5">无标识 · 值相等</text>
+
+      <!-- Tactical horizontal arrows row 1 -->
+      <line x1="339" y1="359" x2="360" y2="359" stroke="#059669" stroke-width="2" marker-end="url(#aCal)"/>
+      <text x="350" y="350" text-anchor="middle" font-size="9" fill="#059669">入口</text>
+
+      <line x1="554" y1="359" x2="575" y2="359" stroke="#059669" stroke-width="1.5" marker-end="url(#aCal)"/>
+      <text x="565" y="350" text-anchor="middle" font-size="9" fill="#059669">引用</text>
+
+      <line x1="769" y1="359" x2="790" y2="359" stroke="#059669" stroke-width="1.5" marker-end="url(#aCal)"/>
+      <text x="780" y="350" text-anchor="middle" font-size="9" fill="#059669">包含</text>
+
+      <!-- Row 2: Supporting blocks (centered: x=110,290,470,650,830) -->
+      <rect x="110" y="430" width="160" height="52" rx="8" fill="#FFF" stroke="#34D399" stroke-width="1.5" filter="url(#cn1)"/>
+      <text x="190" y="454" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">领域服务</text>
+      <text x="190" y="472" text-anchor="middle" font-size="9" fill="#64748B">无状态·跨聚合</text>
+
+      <rect x="290" y="430" width="160" height="52" rx="8" fill="#FFF" stroke="#34D399" stroke-width="1.5" filter="url(#cn1)"/>
+      <text x="370" y="454" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">仓储 Repository</text>
+      <text x="370" y="472" text-anchor="middle" font-size="9" fill="#64748B">聚合持久化</text>
+
+      <rect x="470" y="430" width="160" height="52" rx="8" fill="#FFF" stroke="#34D399" stroke-width="1.5" filter="url(#cn1)"/>
+      <text x="550" y="454" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">工厂 Factory</text>
+      <text x="550" y="472" text-anchor="middle" font-size="9" fill="#64748B">创建复杂聚合</text>
+
+      <rect x="650" y="430" width="160" height="52" rx="8" fill="#FFF" stroke="#34D399" stroke-width="1.5" filter="url(#cn1)"/>
+      <text x="730" y="454" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46">领域事件 Event</text>
+      <text x="730" y="472" text-anchor="middle" font-size="9" fill="#64748B">过去式·解耦</text>
+
+      <rect x="830" y="430" width="160" height="52" rx="8" fill="#FFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#cn1)"/>
+      <text x="910" y="454" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">模块 Module</text>
+      <text x="910" y="472" text-anchor="middle" font-size="9" fill="#94A3B8">组织单元</text>
+
+      <!-- Horizontal arrows row 2 -->
+      <line x1="272" y1="456" x2="288" y2="456" stroke="#34D399" stroke-width="1" marker-end="url(#aCal)"/>
+      <line x1="452" y1="456" x2="468" y2="456" stroke="#34D399" stroke-width="1" marker-end="url(#aCal)"/>
+      <line x1="632" y1="456" x2="648" y2="456" stroke="#34D399" stroke-width="1" marker-end="url(#aCal)"/>
+
+      <!-- Up arrows: services → core blocks (dashed) -->
+      <!-- Service→Aggregate -->
+      <line x1="190" y1="428" x2="227" y2="392" stroke="#34D399" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#aCal)"/>
+      <!-- Repo→Root -->
+      <line x1="370" y1="428" x2="457" y2="392" stroke="#34D399" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#aCal)"/>
+      <!-- Factory→Entity -->
+      <line x1="550" y1="428" x2="672" y2="392" stroke="#34D399" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#aCal)"/>
+      <!-- Event→VO (events contain VO snapshots) -->
+      <line x1="730" y1="428" x2="887" y2="392" stroke="#34D399" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#aCal)"/>
+
+      <!-- ═══ ARCHITECTURAL LAYER ═══ -->
+      <rect x="30" y="600" width="1040" height="145" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1" opacity=".6"/>
+      <text x="55" y="626" font-size="14" font-weight="700" fill="#475569">架构层 Architectural</text>
+
+      <!-- 3 blocks centered: x=180,440,700, each w=220 -->
+      <rect x="180" y="642" width="220" height="52" rx="8" fill="#FFF" stroke="#94A3B8" stroke-width="1.5" filter="url(#cn1)"/>
+      <text x="290" y="668" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">应用服务 App Service</text>
+      <text x="290" y="688" text-anchor="middle" font-size="9.5" fill="#64748B">用例编排 · 事务边界</text>
+
+      <rect x="440" y="642" width="220" height="52" rx="8" fill="#FFF" stroke="#94A3B8" stroke-width="1.5" filter="url(#cn1)"/>
+      <text x="550" y="668" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">DTO</text>
+      <text x="550" y="688" text-anchor="middle" font-size="9.5" fill="#64748B">数据传输 · 层间解耦</text>
+
+      <rect x="700" y="642" width="220" height="52" rx="8" fill="#FFF" stroke="#94A3B8" stroke-width="1.5" filter="url(#cn1)"/>
+      <text x="810" y="668" text-anchor="middle" font-size="12" font-weight="700" fill="#475569">基础设施</text>
+      <text x="810" y="688" text-anchor="middle" font-size="9.5" fill="#64748B">DB · MQ · 外部API · DI</text>
+
+      <!-- Arch→Tactical arrows -->
+      <line x1="290" y1="640" x2="190" y2="484" stroke="#EA580C" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#aDep)"/>
+      <text x="200" y="570" font-size="9" fill="#EA580C">编排调用</text>
+
+      <line x1="810" y1="640" x2="370" y2="484" stroke="#EA580C" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#aDep)"/>
+      <text x="620" y="570" font-size="9" fill="#EA580C">实现仓储</text>
+
+      <!-- ═══ LEGEND ═══ -->
+      <rect x="80" y="768" width="940" height="50" rx="8" fill="#FFF" stroke="#E2E8F0" stroke-width="1"/>
+      <line x1="105" y1="794" x2="145" y2="794" stroke="#2563EB" stroke-width="3"/>
+      <text x="152" y="799" font-size="11" fill="#475569">包含/组成</text>
+      <line x1="255" y1="794" x2="295" y2="794" stroke="#059669" stroke-width="3"/>
+      <text x="302" y="799" font-size="11" fill="#475569">调用/使用</text>
+      <line x1="405" y1="794" x2="445" y2="794" stroke="#7C3AED" stroke-width="3" stroke-dasharray="6,3"/>
+      <text x="452" y="799" font-size="11" fill="#475569">驱动/分析→实现</text>
+      <line x1="590" y1="794" x2="630" y2="794" stroke="#EA580C" stroke-width="3" stroke-dasharray="5,3"/>
+      <text x="637" y="799" font-size="11" fill="#475569">依赖/编排</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ═══════════ 6. 分层架构 ═══════════ -->
+<section id="layers">
+  <h2><span class="num">6</span> 分层架构 & 事件驱动</h2>
+  <p>DDD 推荐<strong>整洁分层架构</strong>（依赖方向内聚）和<strong>领域事件驱动</strong>的最终一致性，实现聚合之间的松耦合。</p>
+
+  <div class="card">
+    <svg viewBox="0 0 1100 620" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="ly1"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity=".08"/></filter>
+        <marker id="lyA" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#94A3B8"/></marker>
+        <marker id="lyP" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#7C3AED"/></marker>
+        <marker id="lyR" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5 Z" fill="#DC2626"/></marker>
+      </defs>
+
+      <!-- ═══ LEFT: 4-Layer Architecture ═══ -->
+      <text x="275" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">🏗️ 四层依赖架构</text>
+
+      <!-- Interface (outermost) -->
+      <rect x="40" y="48" width="470" height="54" rx="8" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5" filter="url(#ly1)"/>
+      <text x="275" y="74" text-anchor="middle" font-size="13" font-weight="700" fill="#64748B">接口层 Interface/UI</text>
+      <text x="275" y="94" text-anchor="middle" font-size="10" fill="#94A3B8">REST · gRPC · GraphQL · MQ Listener</text>
+
+      <!-- Application -->
+      <rect x="80" y="114" width="390" height="54" rx="8" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1.5" filter="url(#ly1)"/>
+      <text x="275" y="140" text-anchor="middle" font-size="13" font-weight="700" fill="#2563EB">应用层 Application</text>
+      <text x="275" y="160" text-anchor="middle" font-size="10" fill="#60A5FA">App Service · DTO · 事务管理 · 权限校验</text>
+
+      <!-- Domain (core) -->
+      <rect x="120" y="180" width="310" height="54" rx="8" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="2" filter="url(#ly1)"/>
+      <text x="275" y="206" text-anchor="middle" font-size="13" font-weight="700" fill="#065F46">领域层 Domain ⭐ 核心</text>
+      <text x="275" y="226" text-anchor="middle" font-size="10" fill="#059669">Aggregate · Entity · VO · Service · Event</text>
+
+      <!-- Infrastructure (innermost) -->
+      <rect x="160" y="246" width="230" height="54" rx="8" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1.5" filter="url(#ly1)"/>
+      <text x="275" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="#64748B">基础设施层 Infrastructure</text>
+      <text x="275" y="292" text-anchor="middle" font-size="10" fill="#94A3B8">Repository 实现 · ORM · MQ · 外部 API</text>
+
+      <!-- Dependency arrow: crosses all 4 layers -->
+      <line x1="38" y1="102" x2="38" y2="300" stroke="#DC2626" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#lyR)"/>
+      <text x="20" y="202" text-anchor="middle" font-size="10" fill="#DC2626" transform="rotate(-90,20,202)">依赖方向</text>
+
+      <!-- ═══ RIGHT: DIP Concept ═══ -->
+      <text x="810" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">📐 依赖倒置原则 DIP</text>
+
+      <!-- Left column: abstraction layers (top-down) -->
+      <rect x="590" y="50" width="180" height="36" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="680" y="73" text-anchor="middle" font-size="11" font-weight="600" fill="#64748B">接口层</text>
+      <line x1="680" y1="88" x2="680" y2="100" stroke="#94A3B8" stroke-width="1" marker-end="url(#lyA)"/>
+      <rect x="590" y="102" width="180" height="36" rx="6" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1"/>
+      <text x="680" y="125" text-anchor="middle" font-size="11" font-weight="600" fill="#2563EB">应用层</text>
+      <line x1="680" y1="140" x2="680" y2="152" stroke="#94A3B8" stroke-width="1" marker-end="url(#lyA)"/>
+      <rect x="590" y="154" width="180" height="36" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="2"/>
+      <text x="680" y="177" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">领域层 ⭐</text>
+
+      <!-- Right-bottom: infrastructure implements domain interface -->
+      <rect x="820" y="206" width="190" height="36" rx="6" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="915" y="229" text-anchor="middle" font-size="11" font-weight="600" fill="#64748B">基础设施层</text>
+
+      <!-- DIP arrow: infra → domain (implements interface defined in domain) -->
+      <line x1="915" y1="204" x2="770" y2="172" stroke="#7C3AED" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#lyP)"/>
+      <text x="842" y="182" font-size="9" fill="#7C3AED">实现接口</text>
+
+      <text x="680" y="222" text-anchor="middle" font-size="10" fill="#94A3B8">↑ 领域层定义接口</text>
+      <text x="680" y="240" text-anchor="middle" font-size="10" fill="#94A3B8">↓ 基础设施层实现</text>
+
+      <!-- ═══ Event-Driven ═══ -->
+      <text x="810" y="280" text-anchor="middle" font-size="15" font-weight="700" fill="#334155">⚡ 领域事件驱动</text>
+
+      <rect x="560" y="296" width="490" height="100" rx="10" fill="#FFF" stroke="#E2E8F0" stroke-width="1" filter="url(#ly1)"/>
+
+      <!-- Centered: A → Bus → B -->
+      <rect x="610" y="316" width="130" height="48" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+      <text x="675" y="339" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">聚合 A</text>
+      <text x="675" y="356" text-anchor="middle" font-size="9" fill="#34D399">发布事件</text>
+
+      <rect x="765" y="316" width="90" height="48" rx="6" fill="#EDE9FE" stroke="#A78BFA" stroke-width="1.5"/>
+      <text x="810" y="339" text-anchor="middle" font-size="10" font-weight="700" fill="#7C3AED">Event Bus</text>
+      <text x="810" y="356" text-anchor="middle" font-size="9" fill="#A78BFA">领域事件</text>
+
+      <rect x="880" y="316" width="130" height="48" rx="6" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+      <text x="945" y="339" text-anchor="middle" font-size="11" font-weight="600" fill="#065F46">聚合 B</text>
+      <text x="945" y="356" text-anchor="middle" font-size="9" fill="#34D399">订阅处理</text>
+
+      <line x1="742" y1="340" x2="763" y2="340" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#lyP)"/>
+      <line x1="857" y1="340" x2="878" y2="340" stroke="#7C3AED" stroke-width="1.5" marker-end="url(#lyP)"/>
+
+      <text x="810" y="388" text-anchor="middle" font-size="10" fill="#475569">最终一致性 · 聚合解耦 · Event Sourcing / CQRS</text>
+
+      <!-- ═══ Process Flow ═══ -->
+      <rect x="40" y="418" width="1020" height="100" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="70" y="442" font-size="13" font-weight="700" fill="#334155">📋 典型请求流程</text>
+
+      <!-- 6 steps, centered: 5×125 + 180, gap=20, total=805+100=905, margin=(1020-905)/2=57.5 -->
+      <rect x="97" y="458" width="125" height="44" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="159" y="480" text-anchor="middle" font-size="10" fill="#475569">① 接口层接收</text>
+      <text x="159" y="496" text-anchor="middle" font-size="8.5" fill="#94A3B8">DTO 校验</text>
+
+      <line x1="224" y1="480" x2="240" y2="480" stroke="#94A3B8" stroke-width="1" marker-end="url(#lyA)"/>
+
+      <rect x="242" y="458" width="125" height="44" rx="6" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1"/>
+      <text x="304" y="480" text-anchor="middle" font-size="10" fill="#2563EB">② 应用层编排</text>
+      <text x="304" y="496" text-anchor="middle" font-size="8.5" fill="#60A5FA">开启事务</text>
+
+      <line x1="369" y1="480" x2="385" y2="480" stroke="#94A3B8" stroke-width="1" marker-end="url(#lyA)"/>
+
+      <rect x="387" y="458" width="125" height="44" rx="6" fill="#D1FAE5" stroke="#6EE7B7" stroke-width="1.5"/>
+      <text x="449" y="480" text-anchor="middle" font-size="10" fill="#065F46">③ 领域层执行</text>
+      <text x="449" y="496" text-anchor="middle" font-size="8.5" fill="#059669">业务逻辑</text>
+
+      <line x1="514" y1="480" x2="530" y2="480" stroke="#94A3B8" stroke-width="1" marker-end="url(#lyA)"/>
+
+      <rect x="532" y="458" width="125" height="44" rx="6" fill="#EFF6FF" stroke="#93C5FD" stroke-width="1"/>
+      <text x="594" y="480" text-anchor="middle" font-size="10" fill="#2563EB">④ 仓储持久化</text>
+      <text x="594" y="496" text-anchor="middle" font-size="8.5" fill="#60A5FA">Infra 实现</text>
+
+      <line x1="659" y1="480" x2="675" y2="480" stroke="#94A3B8" stroke-width="1" marker-end="url(#lyA)"/>
+
+      <rect x="677" y="458" width="125" height="44" rx="6" fill="#EDE9FE" stroke="#C4B5FD" stroke-width="1"/>
+      <text x="739" y="480" text-anchor="middle" font-size="10" fill="#7C3AED">⑤ 发布事件</text>
+      <text x="739" y="496" text-anchor="middle" font-size="8.5" fill="#A78BFA">异步通知</text>
+
+      <line x1="804" y1="480" x2="820" y2="480" stroke="#94A3B8" stroke-width="1" marker-end="url(#lyA)"/>
+
+      <rect x="822" y="458" width="180" height="44" rx="6" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+      <text x="912" y="480" text-anchor="middle" font-size="10" fill="#475569">⑥ 提交事务 + 返回 DTO</text>
+      <text x="912" y="496" text-anchor="middle" font-size="8.5" fill="#94A3B8">请求完成</text>
+
+      <!-- ═══ SOLID ═══ -->
+      <rect x="40" y="534" width="1020" height="70" rx="10" fill="#FEF3C7" stroke="#F59E0B" stroke-width="1"/>
+      <text x="70" y="558" font-size="13" font-weight="700" fill="#92400E">💡 DDD 与 SOLID 原则</text>
+      <text x="70" y="580" font-size="10.5" fill="#B45309">S: 单一职责(领域对象) · O: 对扩展开放(事件订阅) · L: 里氏替换(仓库接口) · I: 接口隔离(应用服务) · D: 依赖倒置(领域定义接口, 基础设施实现)</text>
+    </svg>
+  </div>
+</section>
+
+
+<!-- ═══════════ 7. 速查表 ═══════════ -->
+<section id="cheatsheet">
+  <h2><span class="num">7</span> DDD 概念速查表</h2>
+  <p>所有核心概念的简洁定义、职责边界和关键特征，适合快速回顾。</p>
+
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr><th>概念</th><th>层级</th><th>核心定义</th><th>关键特征</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>领域 Domain</td><td>战略</td><td>组织所从事的业务范围</td><td>问题空间的总和</td></tr>
+        <tr><td>子域 Subdomain</td><td>战略</td><td>领域的逻辑分解: 核心域/支撑域/通用域</td><td>指导资源投入策略</td></tr>
+        <tr><td>限界上下文 BC</td><td>战略</td><td>模型定义和适用的边界</td><td>一个BC一个团队；独立部署单元</td></tr>
+        <tr><td>通用语言 UL</td><td>战略</td><td>领域专家+开发者共用的精确语言</td><td>每个BC有独立的UL；代码即文档</td></tr>
+        <tr><td>上下文映射</td><td>战略</td><td>BC 之间的集成关系图</td><td>9种模式；决定团队协作方式</td></tr>
+        <tr><td>聚合 Aggregate</td><td>战术</td><td>由聚合根统领的一致性边界</td><td>事务单元；通过ID引用其他聚合</td></tr>
+        <tr><td>聚合根 Root</td><td>战术</td><td>聚合的入口，拥有全局唯一标识</td><td>守卫业务不变性；外部只能通过它操作</td></tr>
+        <tr><td>实体 Entity</td><td>战术</td><td>具有唯一标识和生命周期的对象</td><td>可变；通过标识判断相等</td></tr>
+        <tr><td>值对象 VO</td><td>战术</td><td>由属性值定义的对象, 无业务标识</td><td>不可变(推荐)；可替换；自验证</td></tr>
+        <tr><td>仓储 Repository</td><td>战术</td><td>聚合的持久化抽象</td><td>接口在领域层, 实现在基础设施层</td></tr>
+        <tr><td>领域服务 Service</td><td>战术</td><td>无状态的领域操作</td><td>不属于特定实体/VO；跨聚合逻辑</td></tr>
+        <tr><td>工厂 Factory</td><td>战术</td><td>创建复杂聚合或实体</td><td>封装构造逻辑；保证对象完整性</td></tr>
+        <tr><td>领域事件 Event</td><td>战术</td><td>领域中发生的重要事情</td><td>过去式命名；解耦聚合；最终一致性</td></tr>
+        <tr><td>模块 Module</td><td>战术</td><td>组织领域内相关概念的容器</td><td>低耦合高内聚；对应 package/命名空间</td></tr>
+        <tr><td>应用服务 App Service</td><td>应用</td><td>编排领域对象完成用例</td><td>事务边界；不包含业务逻辑</td></tr>
+        <tr><td>DTO</td><td>应用</td><td>层间数据传输对象</td><td>扁平化；防止领域模型泄露</td></tr>
+        <tr><td>ACL</td><td>集成</td><td>隔离外部模型的翻译层</td><td>保护自身模型不受外部污染</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  DDD 知识图谱 · 从全景到局部 · 整理于 2026-05-26
+</footer>
+
+<script>
+document.querySelectorAll('nav a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href')).scrollIntoView({behavior:'smooth'});
+  });
+});
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting) {
+      document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+      const link = document.querySelector('nav a[href="#'+e.target.id+'"]');
+      if(link) link.classList.add('active');
+    }
+  });
+}, {rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('section[id]').forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>
